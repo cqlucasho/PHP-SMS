@@ -60,7 +60,7 @@ class SmsMemcache extends ASms {
             # 生成验证码
             $validateCode = $this->generateValidateCode($smsCode['count']);
             # 生成短信模板
-            $templateString = $this->selectTemplate($params, $validateCode['code']);
+            $templateString = $this->_selectTemplate($params, $validateCode['code']);
 
             # 执行发送短信
             $success = $this->_sendSms($mobile, $templateString);
@@ -82,7 +82,7 @@ class SmsMemcache extends ASms {
     public function sendSmsMessage($params) {
         if(!empty($params['mobile'])) {
             # 生成短信模板
-            $templateString = $this->selectTemplate($params);
+            $templateString = $this->_selectTemplate($params);
 
             # 执行发送短信
             $this->_sendSms($params['mobile'], $templateString);
