@@ -48,7 +48,7 @@ abstract class ASms extends SmsErrorException {
      * @param string $host 连接地址
      * @param int $port 端口
      */
-    protected function __initialCache($host, $port) {
+    protected function __initialCache($host, $port, $timeout = 3600) {
         $this->cache = null;
     }
 
