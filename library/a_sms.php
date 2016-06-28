@@ -1,7 +1,4 @@
 <?php
-# 加载memcache缓存引擎, 路径按需求修改
-require_once(dirname(__FILE__).'/xxxxxxxx/memcache.php');
-
 /**
  * 处理短信错误信息
  */
