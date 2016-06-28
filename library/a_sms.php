@@ -22,9 +22,9 @@ abstract class ASms extends SmsErrorException {
      * @param $template
      */
     public function __construct($currTemplate, $db = null, $templates = null) {
-        $this->current_template = !empty($currTemplate) ? $currTemplate : $this->current_template;
-        $this->templates = isset($templates) ? $templates : $this->_loadSmsConfig();
-        $this->db = $db;
+        $this->_current_template = !empty($currTemplate) ? $currTemplate : $this->_current_template;
+        $this->_templates = isset($templates) ? $templates : $this->_loadSmsConfig();
+        $this->_db = $db;
     }
 
     /**
@@ -39,21 +39,30 @@ abstract class ASms extends SmsErrorException {
      * 获取生存时间
      */
     public function fetchExpire() {
-        return !empty($this->templates['sms_expire_time']) ? $this->templates['sms_expire_time'] : $this->expire;
+        return !empty($this->_templates['sms_expire_time']) ? $this->_templates['sms_expire_time'] : $this->_expire;
     }
 
     /**
-     * 初始化缓存, 子类可重写此方法
+     * 获取最后生成的短信信息
+     *
+     * @return string
+     */
+    public function fetchTemplateString() {
+        return $this->_template_string;
+    }
+
+    /**
+     * 初始化缓存
      *
      * @param string $host 连接地址
      * @param int $port 端口
      */
     protected function __initialCache($host, $port, $timeout = 3600) {
-        $this->cache = null;
+        $this->_cache = null;
     }
 
     /**
-     * 加载短信模板, 子类可重写此方法.
+     * 加载短信模板
      *
      * @return array
      */
@@ -67,28 +76,31 @@ abstract class ASms extends SmsErrorException {
      */
     protected function _sendSms($mobile, $templateString) {
         # 判断是否开启短信
-        if(!$this->templates['open']) return false;
+        if(!$this->_templates['open']) return false;
 
         if($mobile) {
             # 检测手机网络类型
             $this->checkNetworkType($mobile);
 
             # 发送参数到短信平台
-            $client = new SoapClient(self::SMS_GATEWAY);
+            /*$client = new SoapClient(self::SMS_GATEWAY);
             $param = array(
-                "userCode"  => $this->templates['sms_account'],
-                "userPass"  => $this->templates['sms_pass'],
+                "userCode"  => $this->_templates['sms_account'],
+                "userPass"  => $this->_templates['sms_pass'],
                 "DesNo"     => $mobile,
-                "Msg"       => $templateString.$this->templates['sms_sign'],
+                "Msg"       => $templateString.$this->_templates['sms_sign'],
                 "Channel"   => "1"
             );
             $result = $client->__soapCall('SendMsg', array('parameters' => $param));
 
             # 检查状态
             $this->_checkStatus($result, array('mobile' => $mobile));
-            $templateString = empty(self::$errorInfo) ? $templateString : self::$errorInfo;
+            $templateString = empty(self::$errorInfo) ? $templateString : self::$errorInfo;*/
 
-            if(empty(self::$errorInfo)) return true;
+            if(empty(self::$errorInfo)) {
+                $this->_template_string = $templateString;
+                return true;
+            }
         }
 
         return false;
@@ -176,7 +188,7 @@ abstract class ASms extends SmsErrorException {
     abstract public function compareValue($key, $value);
 
     /**
-     * 检查短信状态, 可按需求修改此方法.
+     * 检查短信状态
      *
      * @param $result
      * @param array $params
@@ -202,7 +214,7 @@ abstract class ASms extends SmsErrorException {
                 SmsErrorException::printf("通道错误");
                 break;
             case -9 :
-                SmsErrorException::printf("{$this->network_type}号码{$params['mobile']}：无效号码\n");
+                SmsErrorException::printf("{$this->_network_type}号码{$params['mobile']}：无效号码\n");
                 break;
             default :
                 break;
@@ -214,19 +226,21 @@ abstract class ASms extends SmsErrorException {
     # 短信平台地址
     const SMS_GATEWAY = "http://sms.cqmono.cn/api/MsgSend.asmx?WSDL";
     # 短信生存时间
-    protected $expire = 180;
+    protected $_expire = 180;
     # 每个手机号最大发送次数
     protected $_max_send = 5;
     # 手机通信网络类型
-    protected $network_type;
+    protected $_network_type;
 
     # 当前使用的短信模板名称
-    protected $current_template = 'tpl_sms_authcode';
+    protected $_current_template = 'tpl_sms_authcode';
     # 短信模板配置
-    protected $templates = array();
+    protected $_templates = array();
+    # 生成的短信信息
+    protected $_template_string = '';
 
     # 数据库对象
-    protected $db = null;
+    protected $_db = null;
     # 缓存引擎对象
-    protected $cache = null;
+    protected $_cache = null;
 }
