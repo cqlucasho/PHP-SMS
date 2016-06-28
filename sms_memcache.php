@@ -97,7 +97,7 @@ class SmsMemcache extends ASms {
      * @param string $validateCode
      * @return string
      */
-    public function selectTemplate($params, $validateCode = '') {
+    protected function _selectTemplate($params, $validateCode = '') {
         switch($this->current_template) {
             case 'tpl_register_ok':
                 $templateString = sprintf($this->templates[$this->current_template], $params['username'], $params['password']);
