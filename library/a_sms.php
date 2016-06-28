@@ -101,6 +101,17 @@ abstract class ASms extends SmsErrorException {
     }
 
     /**
+     * 选择模板, 子类可重写此方法.
+     *
+     * @param $params
+     * @param string $validateCode
+     * @return string
+     */
+    protected function _selectTemplate($params, $validateCode = '') {
+        return '';
+    }
+
+    /**
      * 检测手机通信网络类型
      * @param $mobile
      * @return bool
