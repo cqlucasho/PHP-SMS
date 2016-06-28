@@ -88,9 +88,6 @@ abstract class ASms extends SmsErrorException {
             $this->_checkStatus($result, array('mobile' => $mobile));
             $templateString = empty(self::$errorInfo) ? $templateString : self::$errorInfo;
 
-            # 插入数据库记录
-            # mysqli_query('sql语句');
-
             if(empty(self::$errorInfo)) return true;
         }
 
