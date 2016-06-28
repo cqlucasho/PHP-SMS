@@ -48,7 +48,7 @@ abstract class ASms extends SmsErrorException {
      * @return string
      */
     public function fetchTemplateString() {
-        return $this->_template_string;
+        return !empty($this->_template_string) ? $this->_template_string : null;
     }
 
     /**
@@ -57,7 +57,7 @@ abstract class ASms extends SmsErrorException {
      * @return string
      */
     public function fetchErrorInfo() {
-        return self::$errorInfo;
+        return !empty(self::$errorInfo) ? self::$errorInfo : null;
     }
 
     /**
