@@ -43,13 +43,13 @@ abstract class ASms extends SmsErrorException {
     }
 
     /**
-     * 初始化缓存
+     * 初始化缓存, 子类可重写此方法
      *
      * @param string $host 连接地址
      * @param int $port 端口
      */
     protected function __initialCache($host, $port) {
-        $this->cache = 'new一个缓存对象';
+        $this->cache = null;
     }
 
     /**
