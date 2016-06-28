@@ -85,7 +85,7 @@ class SmsMemcache extends ASms {
             $templateString = $this->_selectTemplate($params);
 
             # 执行发送短信
-            $this->_sendSms($params['mobile'], $templateString);
+            return $this->_sendSms($params['mobile'], $templateString);
         }
     }
 
