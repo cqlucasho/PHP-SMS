@@ -58,7 +58,7 @@ abstract class ASms extends SmsErrorException {
      * @return array
      */
     protected function _loadSmsConfig() {
-        return array();
+        return dirname(dirname(__FILE__)).DIRECTORY_SEPARATOR.'config.php';
     }
 
     /**
