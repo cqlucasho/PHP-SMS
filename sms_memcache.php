@@ -21,7 +21,7 @@ class SmsMemcache extends ASms {
 
         #　初始化缓存
         if($cache) {
-            $this->__initialCache('127.0.0.1', 12000);
+            $this->__initialCache('ip', 12000);
         }
     }
 
@@ -43,7 +43,7 @@ class SmsMemcache extends ASms {
         $hashKey = $this->generateSmsKey(self::SMS_KEY.$params['token']);
 
         # 判断是否已经发送, 并且发送次数未超过限定最大数
-        $smsCode = $this->cache->read($hashKey);
+        $smsCode = $this->_cache->read($hashKey);
         if(!empty($smsCode)) {
             if($smsCode['count'] < $this->_max_send) {
                 $smsCode['count'] = $smsCode['count']+1;
@@ -89,21 +89,21 @@ class SmsMemcache extends ASms {
         }
     }
 
-
     /**
      * 选择模板
      *
-     * @param mixed $params
+     * @param $params
      * @param string $validateCode
      * @return string
      */
     protected function _selectTemplate($params, $validateCode = '') {
-        switch($this->current_template) {
+        $templateString = '';
+
+        switch($this->_current_template) {
             case 'tpl_register_ok':
-                $templateString = sprintf($this->templates[$this->current_template], $params['username'], $params['password']);
+                $templateString = sprintf($this->_templates[$this->_current_template], $params['username'], $params['password']);
                 break;
             default:
-                $templateString = sprintf($this->templates[$this->current_template], $validateCode);
                 break;
         }
 
@@ -116,18 +116,18 @@ class SmsMemcache extends ASms {
      * @param string $templateName 模板名
      */
     public function setCurrentTemplate($templateName = '') {
-        if(!empty($templateName)) $this->current_template = $templateName;
+        if(!empty($templateName)) $this->_current_template = $templateName;
     }
 
     /**
      * 保存短信到缓存
      *
-     * @param string $name     缓存key
-     * @param mixed $value    缓存值
+     * @param $name     缓存key
+     * @param $value    缓存值
      * @param int $expire 有效期
      */
     protected function setValue($name, $value, $expire) {
-        $this->cache->write($name, $value, $expire);
+        $this->_cache->write($name, $value, $expire);
     }
 
     /**
@@ -138,14 +138,14 @@ class SmsMemcache extends ASms {
      * @return bool
      */
     public function getValue($name) {
-        return ($value = $this->cache->read($this->generateSmsKey(self::SMS_KEY.$name))) ? $value['code'] : false;
+        return ($value = $this->_cache->read($this->generateSmsKey(self::SMS_KEY.$name))) ? $value['code'] : false;
     }
 
     /**
      * 清除缓存值
      */
     public function cleanValue($name) {
-        return $this->cache->delete($this->generateSmsKey(self::SMS_KEY.$name));
+        return $this->_cache->delete($this->generateSmsKey(self::SMS_KEY.$name));
     }
 
     /**
