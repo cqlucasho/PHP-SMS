@@ -52,6 +52,15 @@ abstract class ASms extends SmsErrorException {
     }
 
     /**
+     * 获取错误信息
+     *
+     * @return string
+     */
+    public function fetchErrorInfo() {
+        return self::$errorInfo;
+    }
+
+    /**
      * 初始化缓存
      *
      * @param string $host 连接地址
@@ -94,9 +103,7 @@ abstract class ASms extends SmsErrorException {
             $result = $client->__soapCall('SendMsg', array('parameters' => $param));
 
             # 检查状态
-            $this->_checkStatus($result, array('mobile' => $mobile));
-            $templateString = empty(self::$errorInfo) ? $templateString : self::$errorInfo;*/
-
+            $this->_checkStatus($result, array('mobile' => $mobile));*/
             if(empty(self::$errorInfo)) {
                 $this->_template_string = $templateString;
                 return true;
