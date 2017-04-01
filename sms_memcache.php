@@ -7,7 +7,7 @@ require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
  * @example
  *  发送:
  *      require_once('extends/tools/sms/sms_memcache.php');
- *      $sms = new SmsMemcache('需要使用的短信模板名称', $db_object, '传入sms_config文件变量,缺省为自动加载');
+ *      $sms = new SmsMemcache('需要使用的短信模板名称', '传入sms_config文件变量,缺省为自动加载');
  *      $sms->sendSms(array('token' => 'xxx', 'mobile' => 'xxx', 'money' => 'xxx'));
  *
  *  读取:
@@ -16,8 +16,8 @@ require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
  *      $sms->getValue($name);
  */
 class SmsMemcache extends ASms {
-    public function __construct($currTemplate = null, $db = null, $templates = null, $cache = true) {
-        parent::__construct($currTemplate, $db, $templates);
+    public function __construct($currTemplate = null, $templates = null, $cache = true) {
+        parent::__construct($currTemplate, $templates);
 
         #　初始化缓存
         if($cache) {
