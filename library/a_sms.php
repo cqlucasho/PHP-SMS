@@ -21,10 +21,9 @@ abstract class ASms extends SmsErrorException {
      * 初始化
      * @param $template
      */
-    public function __construct($currTemplate, $db = null, $templates = null) {
+    public function __construct($currTemplate, $templates = null) {
         $this->_current_template = !empty($currTemplate) ? $currTemplate : $this->_current_template;
         $this->_templates = isset($templates) ? $templates : $this->_loadSmsConfig();
-        $this->_db = $db;
     }
 
     /**
@@ -61,10 +60,11 @@ abstract class ASms extends SmsErrorException {
     }
 
     /**
-     * 初始化缓存
+     * 初始化缓存对象
      *
      * @param string $host 连接地址
      * @param int $port 端口
+     * @param int $timeout 超时时间
      */
     protected function __initialCache($host, $port, $timeout = 3600) {
         $this->_cache = null;
@@ -246,8 +246,6 @@ abstract class ASms extends SmsErrorException {
     # 生成的短信信息
     protected $_template_string = '';
 
-    # 数据库对象
-    protected $_db = null;
     # 缓存引擎对象
     protected $_cache = null;
 }
