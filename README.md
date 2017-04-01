@@ -17,7 +17,7 @@
      * 多次模板切换发送
      */
     # 初始化短信类
-    $smsObj = new SmsMemcache(null, $this->getDB('lsg'));
+    $smsObj = new SmsMemcache(null);
     foreach($params['currTemplate'] as $templates) {
         $smsObj->setCurrentTemplate($templates['name']);
         $smsObj->sendSmsMessage($templates);
