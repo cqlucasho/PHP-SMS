@@ -161,7 +161,16 @@ class SmsSession extends ASms {
      * @see ASms::_send()
      */
     protected function _send() {
-        return true;
+        # 发送参数到短信平台
+        /*$client = new SoapClient(self::SMS_GATEWAY);
+        $param = array(
+            "userCode"  => $this->_templates['sms_account'],
+            "userPass"  => $this->_templates['sms_pass'],
+            "DesNo"     => $mobile,
+            "Msg"       => $templateString.$this->_templates['sms_sign'],
+            "Channel"   => "1"
+        );
+        $result = $client->__soapCall('SendMsg', array('parameters' => $param));*/
     }
 
     /**
