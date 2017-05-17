@@ -41,7 +41,7 @@ class SmsMemcache extends ASms {
         # 判断是否已经发送, 并且发送次数未超过限定最大数
         $smsCode = $this->_cache->read($hashKey);
         if(!empty($smsCode)) {
-            if($smsCode['count'] < $this->_max_send) {
+            if($smsCode['count'] < $this->_configs['sms_send_num']) {
                 $smsCode['count'] = $smsCode['count']+1;
                 $this->cleanValue($params['token']);
             }
