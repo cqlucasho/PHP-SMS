@@ -117,11 +117,7 @@ class SmsMemcache extends ASms {
     }
 
     /**
-     * 保存短信到缓存
-     *
-     * @param string $name     缓存key
-     * @param string $value    缓存值
-     * @param int $expire 有效期
+     * @see ASms::_setValue()
      */
     protected function _setValue($name, $value, $expire) {
         $this->_cache->write($name, $value, $expire);
@@ -158,5 +154,25 @@ class SmsMemcache extends ASms {
         }
 
         return false;
+    }
+
+    /**
+     * @see ASms::_send()
+     */
+    protected function _send() {
+        return true;
+    }
+
+    /**
+     * @see ASms::_checkStatus()
+     */
+    protected function _checkStatus($result, $params = array()) {
+        switch($result) {
+            case -1 :
+                SmsErrorException::printf('系统异常');
+                break;
+            default :
+                break;
+        }
     }
 }
