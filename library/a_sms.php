@@ -91,7 +91,7 @@ abstract class ASms extends SmsErrorException {
             $this->_checkNetworkType($mobile);
 
             # 发送参数到短信平台
-            $result = $this->_send();
+            $result = $this->_send($mobile, $templateString);
 
             # 检查状态
             $this->_checkStatus($result, array('mobile' => $mobile));
@@ -201,9 +201,11 @@ abstract class ASms extends SmsErrorException {
     /**
      * 具体实现发送短信处理
      *
+     * @param int $mobile 手机号
+     * @param string $templateString 短信模板
      * @return mixed
      */
-    abstract protected function _send();
+    abstract protected function _send($mobile, $templateString);
 
 
     # 配置信息
@@ -211,12 +213,8 @@ abstract class ASms extends SmsErrorException {
 
     # 短信验证码标识符
     const SMS_KEY = 'smsAuth';
-    # 短信平台地址
-    const SMS_GATEWAY = "http://sdk4report.eucp.b2m.cn:8080/sdk/SDKService?wsdl";
     # 短信生存时间
     protected $_expire = 180;
-    # 每个手机号最大发送次数
-    protected $_max_send = 5;
     # 手机通信网络类型
     protected $_network_type;
 
