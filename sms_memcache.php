@@ -16,13 +16,9 @@ require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
  *      $sms->getValue($name);
  */
 class SmsMemcache extends ASms {
-    public function __construct($currTemplate = null, $templates = null, $cache = true) {
+    public function __construct($currTemplate = null, $templates = null) {
         parent::__construct($currTemplate, $templates);
-
-        #　初始化缓存
-        if($cache) {
-            $this->__initialCache('ip', 12000);
-        }
+        $this->__initialCache('ip', 12000);
     }
 
     /**
