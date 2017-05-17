@@ -19,11 +19,10 @@ abstract class SmsErrorException {
 abstract class ASms extends SmsErrorException {
     /**
      * 初始化
-     * @param $template
      */
     public function __construct($currTemplate, $templates = null) {
         $this->_current_template = !empty($currTemplate) ? $currTemplate : $this->_current_template;
-        $this->_templates = isset($templates) ? $templates : $this->_loadSmsConfig();
+        $this->_configs = isset($templates) ? $templates : $this->_loadSmsConfig();
     }
 
     /**
@@ -38,7 +37,7 @@ abstract class ASms extends SmsErrorException {
      * 获取生存时间
      */
     public function fetchExpire() {
-        return !empty($this->_templates['sms_expire_time']) ? $this->_templates['sms_expire_time'] : $this->_expire;
+        return !empty($this->_configs['sms_expire_time']) ? $this->_configs['sms_expire_time'] : $this->_expire;
     }
 
     /**
@@ -85,11 +84,11 @@ abstract class ASms extends SmsErrorException {
      */
     protected function _sendSms($mobile, $templateString) {
         # 判断是否开启短信
-        if(!$this->_templates['open']) return false;
+        if(!$this->_configs['open']) return false;
 
         if($mobile) {
             # 检测手机网络类型
-            $this->checkNetworkType($mobile);
+            $this->_checkNetworkType($mobile);
 
             # 发送参数到短信平台
             /*$client = new SoapClient(self::SMS_GATEWAY);
@@ -129,7 +128,7 @@ abstract class ASms extends SmsErrorException {
      * @param $mobile
      * @return bool
      */
-    protected function checkNetworkType($mobile) {
+    protected function _checkNetworkType($mobile) {
         if(!preg_match("/^1[34578][0-9]{9}$/", $mobile)){
             return false;
         }
@@ -154,7 +153,7 @@ abstract class ASms extends SmsErrorException {
      * 生成随机验证码
      * @return array
      */
-    protected function generateValidateCode($count = 1) {
+    protected function _generateValidateCode($count = 1) {
         return array('code' => mt_rand(100000, 999999), 'count' => $count);
     }
 
@@ -163,15 +162,9 @@ abstract class ASms extends SmsErrorException {
      * @param $name
      * @return string
      */
-    protected function generateSmsKey($name) {
+    protected function _generateSmsKey($name) {
         return sha1($name);
     }
-
-    /**
-     * 设置验证码
-     * @return mixed
-     */
-    abstract protected function setValue($name, $value, $expire);
 
     /**
      * 获取验证码
@@ -193,6 +186,12 @@ abstract class ASms extends SmsErrorException {
      * @return mixed
      */
     abstract public function compareValue($key, $value);
+
+    /**
+     * 设置验证码
+     * @return mixed
+     */
+    abstract protected function _setValue($name, $value, $expire);
 
     /**
      * 检查短信状态
@@ -228,6 +227,10 @@ abstract class ASms extends SmsErrorException {
         }
     }
 
+
+    # 配置信息
+    protected $_configs = array();
+
     # 短信验证码标识符
     const SMS_KEY = 'smsAuth';
     # 短信平台地址
@@ -241,8 +244,6 @@ abstract class ASms extends SmsErrorException {
 
     # 当前使用的短信模板名称
     protected $_current_template = 'tpl_sms_authcode';
-    # 短信模板配置
-    protected $_templates = array();
     # 生成的短信信息
     protected $_template_string = '';
 
