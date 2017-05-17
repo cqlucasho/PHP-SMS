@@ -1,58 +1,102 @@
 <?php
-require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
+/**
+ * 处理短信错误信息
+ */
+abstract class SmsErrorException {
+    protected static function printf($string) {
+        self::$errorInfo = $string;
+    }
+
+    protected static $errorInfo = '';
+}
 
 /**
- * 短信类(session版), 用于获取短信通知信息.
+ * 短信抽象类, 所有短信类继承此类.
  *
- * @example
- *  发送:
- *      require_once('sms_session.php');
- *      $sms = new SmsSession('需要使用的短信模板名称', '传入sms_config文件变量,缺省为自动加载');
- *      $sms->sendSms(array('token' => 'xxx', 'mobile' => 'xxx', 'money' => 'xxx'));
- *
- *  读取:
- *      require_once('sms_session.php');
- *      $sms = new SmsSession();
- *      $sms->getValue($name);
+ * @abstract ASms
+ * @author lucasho
  */
-class SmsSession extends ASms {
-    public function __construct($currTemplate = null, $templates = null) {
-        parent::__construct($currTemplate, $templates);
+abstract class ASms extends SmsErrorException {
+    /**
+     * 初始化
+     */
+    public function __construct($currTemplate, $templates = null) {
+        $this->_current_template = !empty($currTemplate) ? $currTemplate : $this->_current_template;
+        $this->_configs = isset($templates) ? $templates : $this->_loadSmsConfig();
     }
 
     /**
-     * 发送短信, 用于验证码保存到session存储.
-     * 如果需要新的需求, 建议新建类文件并继承ASms类.
+     * 发送短信, 子类重写此方法
+     * @return array
+     */
+    public function sendSms() {
+        return array();
+    }
+
+    /**
+     * 获取生存时间
+     */
+    public function fetchExpire() {
+        return !empty($this->_configs['sms_expire_time']) ? $this->_configs['sms_expire_time'] : $this->_expire;
+    }
+
+    /**
+     * 获取最后生成的短信信息
      *
-     * $params包含成员变量:
-     *      'token': 唯一标识符. 用于生成缓存key, 如果未指定token值, 则使用手机号作为缓存key保存.
-     *      'mobile': 手机号
-     *      [*]: 其它参数
+     * @return string
+     */
+    public function fetchTemplateString() {
+        return !empty($this->_template_string) ? $this->_template_string : null;
+    }
+
+    /**
+     * 获取错误信息
      *
-     * @param array $params
+     * @return string
+     */
+    public function fetchErrorInfo() {
+        return !empty(self::$errorInfo) ? self::$errorInfo : null;
+    }
+
+    /**
+     * 初始化缓存对象
+     *
+     * @param string $host 连接地址
+     * @param int $port 端口
+     * @param int $timeout 超时时间
+     */
+    protected function __initialCache($host, $port, $timeout = 3600) {
+        $this->_cache = null;
+    }
+
+    /**
+     * 加载短信模板
+     *
+     * @return array
+     */
+    protected function _loadSmsConfig() {
+        return require(dirname(dirname(__FILE__)).DIRECTORY_SEPARATOR.'config.php');
+    }
+
+    /**
+     * 子类可重写此方法
      * @return bool
      */
-    public function sendSms($params = array()) {
-        # 生成hash key
-        if(!isset($params['token'])) $params['token'] = $params['mobile'];
-        $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
+    protected function _sendSms($mobile, $templateString) {
+        # 判断是否开启短信
+        if(!$this->_configs['open']) return false;
 
-        # 判断是否已经发送
-        if(isset($_SESSION[$hashKey])) $this->cleanValue($params['token']);
+        if($mobile) {
+            # 检测手机网络类型
+            $this->_checkNetworkType($mobile);
 
-        if(!empty($params)) {
-            $mobile = !empty($params['mobile']) ? $params['mobile'] : '';
+            # 发送参数到短信平台
+            $result = $this->_send();
 
-            # 生成验证码
-            $validateCode = $this->_generateValidateCode();
-            # 生成短信模板
-            $templateString = $this->_selectTemplate($params, $validateCode['code']);
-
-            # 执行发送短信
-            $success = $this->_sendSms($mobile, $templateString);
-            if($success) {
-                # 将验证码保存到缓存
-                $this->_setValue($hashKey, $validateCode);
+            # 检查状态
+            $this->_checkStatus($result, array('mobile' => $mobile));
+            if(empty(self::$errorInfo)) {
+                $this->_template_string = $templateString;
                 return true;
             }
         }
@@ -61,132 +105,126 @@ class SmsSession extends ASms {
     }
 
     /**
-     * 只发送短信, 不保存值到缓存.
-     *
-     * @param array $params 参数列表
-     * @return bool
-     */
-    public function sendSmsMessage($params) {
-        if(!empty($params['mobile'])) {
-            # 生成短信模板
-            $templateString = $this->_selectTemplate($params);
-
-            # 执行发送短信
-            return $this->_sendSms($params['mobile'], $templateString);
-        }
-    }
-
-    /**
-     * 设置当前模板名称
-     *
-     * @param string $templateName 模板名
-     */
-    public function setCurrentTemplate($templateName = '') {
-        if(!empty($templateName)) $this->_current_template = $templateName;
-    }
-
-    /**
-     * @see ASms::_setValue()
-     */
-    protected function _setValue($key, $value, $expire = 0) {
-        $_SESSION[$key] = $value;
-    }
-
-    /**
-     * 从缓存中获取短信.
-     * 如果为空, 则表示超时.
-     *
-     * @param string|int $key 键名
-     * @return bool
-     */
-    public function getValue($key) {
-        $genKey = $this->_generateSmsKey(self::SMS_KEY.$key);
-
-        return ($value = $_SESSION[$genKey]) ? $value['code'] : false;
-    }
-
-    /**
-     * 比较值
-     *
-     * @param string $key  获取指定缓存的key
-     * @param mixed $value 需要比较的值
-     * @return bool
-     */
-    public function compareValue($key, $value = '') {
-        if(($getValue = $this->getValue($key)) && !empty($value)) {
-            if($getValue == $value) {
-                $this->cleanValue($key);
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 清除缓存值
-     *
-     * @param string $key 键名
-     */
-    public function cleanValue($key) {
-        $genKey = $this->_generateSmsKey(self::SMS_KEY.$key);
-        $_SESSION[$genKey] = '';
-        unset($_SESSION[$genKey]);
-    }
-
-    /**
-     * 选择模板
+     * 选择模板, 子类可重写此方法.
      *
      * @param $params
      * @param string $validateCode
      * @return string
      */
     protected function _selectTemplate($params, $validateCode = '') {
-        $templateString = '';
-
-        switch($this->_current_template) {
-            case 'tpl_register_ok':
-                $templateString = sprintf($this->_configs[$this->_current_template], $params['username'], $params['password']);
-                break;
-            default:
-                break;
-        }
-
-        return $templateString;
+        return '';
     }
 
     /**
-     * @see ASms::_send()
+     * 检测手机通信网络类型
+     * @param $mobile
+     * @return bool
      */
-    protected function _send() {
-        return true;
+    protected function _checkNetworkType($mobile) {
+        if(!preg_match("/^1[34578][0-9]{9}$/", $mobile)){
+            return false;
+        }
+
+        if(preg_match("/^((13[4-9])|(147)|(15[0-2,7-9])|(18[2-3,7-8]))\\d{8}$/", $mobile)){
+            $this->_network_type = '移动';
+        }
+
+        if(preg_match("/^((13[0-2])|(145)|(15[5-6])|(18[5-6]))\\d{8}$/", $mobile)){
+            $this->_network_type = '联通';
+        }
+
+        if(preg_match("/^((133)|(153)|(18[0,9]))\\d{8}$/", $mobile)){
+            $this->_network_type = '电信';
+        }
+        else {
+            $this->_network_type = '未知';
+        }
     }
 
     /**
-     * @see ASms::_checkStatus()
+     * 生成随机验证码
+     * @return array
      */
-    protected function _checkStatus($result, $params = array()) {
-        switch($result) {
-            case -1 :
-                SmsErrorException::printf('系统异常');
-                break;
-            case -117 :
-                SmsErrorException::printf('发送短信失败');
-                break;
-            case 305 :
-                SmsErrorException::printf('提交接口错误');
-                break;
-            case 101:
-            case 303:
-                SmsErrorException::printf('客户端网络故障');
-                break;
-            case 307:
-                SmsErrorException::printf("{$this->_network_type}号码{$params['mobile']}：无效号码\n");
-                break;
-            default :
-                break;
-        }
+    protected function _generateValidateCode($count = 1) {
+        return array('code' => mt_rand(100000, 999999), 'count' => $count);
     }
+
+    /**
+     * 生成短信存储hash key
+     * @param $name
+     * @return string
+     */
+    protected function _generateSmsKey($name) {
+        return sha1($name);
+    }
+
+    /**
+     * 获取验证码
+     * @return mixed
+     */
+    abstract public function getValue($name);
+
+    /**
+     * 清除值
+     * @param $name
+     * @return mixed
+     */
+    abstract public function cleanValue($name);
+
+    /**
+     * 比较值
+     * @param $key
+     * @param $value
+     * @return mixed
+     */
+    abstract public function compareValue($key, $value);
+
+    /**
+     * 设置验证码
+     *
+     * @param string $key 键名
+     * @param string $value 值
+     * @param int $expire 有效期
+     * @return mixed
+     */
+    abstract protected function _setValue($key, $value, $expire);
+
+    /**
+     * 检查短信发送状态
+     *
+     * @param int $result 短信返回状态
+     * @param array $params 其它参数
+     * @return mixed
+     */
+    abstract protected function _checkStatus($result, $params = array());
+
+    /**
+     * 具体实现发送短信处理
+     *
+     * @return mixed
+     */
+    abstract protected function _send();
+
+
+    # 配置信息
+    protected $_configs = array();
+
+    # 短信验证码标识符
+    const SMS_KEY = 'smsAuth';
+    # 短信平台地址
+    const SMS_GATEWAY = "http://sdk4report.eucp.b2m.cn:8080/sdk/SDKService?wsdl";
+    # 短信生存时间
+    protected $_expire = 180;
+    # 每个手机号最大发送次数
+    protected $_max_send = 5;
+    # 手机通信网络类型
+    protected $_network_type;
+
+    # 当前使用的短信模板名称
+    protected $_current_template = 'tpl_sms_authcode';
+    # 生成的短信信息
+    protected $_template_string = '';
+
+    # 缓存引擎对象
+    protected $_cache = null;
 }
