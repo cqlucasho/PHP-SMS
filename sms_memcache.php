@@ -2,23 +2,23 @@
 require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
 
 /**
- * 短信类(缓存版), 用于获取短信通知信息.
+ * 短信类, 用于获取短信通知信息.
  *
  * @example
  *  发送:
- *      require_once('sms_memcache.php');
+ *      require_once('extends/tools/sms/sms_memcache.php');
  *      $sms = new SmsMemcache('需要使用的短信模板名称', '传入sms_config文件变量,缺省为自动加载');
  *      $sms->sendSms(array('token' => 'xxx', 'mobile' => 'xxx', 'money' => 'xxx'));
  *
  *  读取:
- *      require_once('sms_memcache.php');
+ *      require_once('extends/tools/sms/sms_memcache.php');
  *      $sms = new SmsMemcache();
  *      $sms->getValue($name);
  */
 class SmsMemcache extends ASms {
-    public function __construct($currTemplate = null, $templates = null) {
+    public function __construct($currTemplate = null, $templates = null, $cache = true) {
         parent::__construct($currTemplate, $templates);
-        $this->__initialCache('ip', 12000);
+        $this->__initialCache($this->_configs['cache_address'], $this->_configs['cache_port']);
     }
 
     /**
@@ -36,7 +36,7 @@ class SmsMemcache extends ASms {
     public function sendSms($params = array()) {
         # 生成hash
         if(!isset($params['token'])) $params['token'] = $params['mobile'];
-        $hashKey = $this->generateSmsKey(self::SMS_KEY.$params['token']);
+        $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
 
         # 判断是否已经发送, 并且发送次数未超过限定最大数
         $smsCode = $this->_cache->read($hashKey);
@@ -54,7 +54,7 @@ class SmsMemcache extends ASms {
             $mobile = !empty($params['mobile']) ? $params['mobile'] : '';
 
             # 生成验证码
-            $validateCode = $this->generateValidateCode($smsCode['count']);
+            $validateCode = $this->_generateValidateCode($smsCode['count']);
             # 生成短信模板
             $templateString = $this->_selectTemplate($params, $validateCode['code']);
 
@@ -62,7 +62,7 @@ class SmsMemcache extends ASms {
             $success = $this->_sendSms($mobile, $templateString);
             if($success) {
                 # 将验证码保存到缓存
-                $this->setValue($hashKey, $validateCode, $this->fetchExpire());
+                $this->_setValue($hashKey, $validateCode, $this->fetchExpire());
                 return true;
             }
         }
@@ -74,6 +74,7 @@ class SmsMemcache extends ASms {
      * 只发送短信, 不保存值到缓存.
      *
      * @param array $params 参数列表
+     * @return bool
      */
     public function sendSmsMessage($params) {
         if(!empty($params['mobile'])) {
@@ -97,7 +98,7 @@ class SmsMemcache extends ASms {
 
         switch($this->_current_template) {
             case 'tpl_register_ok':
-                $templateString = sprintf($this->_templates[$this->_current_template], $params['username'], $params['password']);
+                $templateString = sprintf($this->_configs[$this->_current_template], $params['username'], $params['password']);
                 break;
             default:
                 break;
@@ -118,11 +119,11 @@ class SmsMemcache extends ASms {
     /**
      * 保存短信到缓存
      *
-     * @param $name     缓存key
-     * @param $value    缓存值
+     * @param string $name     缓存key
+     * @param string $value    缓存值
      * @param int $expire 有效期
      */
-    protected function setValue($name, $value, $expire) {
+    protected function _setValue($name, $value, $expire) {
         $this->_cache->write($name, $value, $expire);
     }
 
@@ -134,14 +135,14 @@ class SmsMemcache extends ASms {
      * @return bool
      */
     public function getValue($name) {
-        return ($value = $this->_cache->read($this->generateSmsKey(self::SMS_KEY.$name))) ? $value['code'] : false;
+        return ($value = $this->_cache->read($this->_generateSmsKey(self::SMS_KEY.$name))) ? $value['code'] : false;
     }
 
     /**
      * 清除缓存值
      */
     public function cleanValue($name) {
-        return $this->_cache->delete($this->generateSmsKey(self::SMS_KEY.$name));
+        return $this->_cache->delete($this->_generateSmsKey(self::SMS_KEY.$name));
     }
 
     /**
