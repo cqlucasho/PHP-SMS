@@ -91,18 +91,10 @@ abstract class ASms extends SmsErrorException {
             $this->_checkNetworkType($mobile);
 
             # 发送参数到短信平台
-            /*$client = new SoapClient(self::SMS_GATEWAY);
-            $param = array(
-                "userCode"  => $this->_templates['sms_account'],
-                "userPass"  => $this->_templates['sms_pass'],
-                "DesNo"     => $mobile,
-                "Msg"       => $templateString.$this->_templates['sms_sign'],
-                "Channel"   => "1"
-            );
-            $result = $client->__soapCall('SendMsg', array('parameters' => $param));
+            $result = $this->_send();
 
             # 检查状态
-            $this->_checkStatus($result, array('mobile' => $mobile));*/
+            $this->_checkStatus($result, array('mobile' => $mobile));
             if(empty(self::$errorInfo)) {
                 $this->_template_string = $templateString;
                 return true;
@@ -134,18 +126,18 @@ abstract class ASms extends SmsErrorException {
         }
 
         if(preg_match("/^((13[4-9])|(147)|(15[0-2,7-9])|(18[2-3,7-8]))\\d{8}$/", $mobile)){
-            $this->network_type = '移动';
+            $this->_network_type = '移动';
         }
 
         if(preg_match("/^((13[0-2])|(145)|(15[5-6])|(18[5-6]))\\d{8}$/", $mobile)){
-            $this->network_type = '联通';
+            $this->_network_type = '联通';
         }
 
         if(preg_match("/^((133)|(153)|(18[0,9]))\\d{8}$/", $mobile)){
-            $this->network_type = '电信';
+            $this->_network_type = '电信';
         }
         else {
-            $this->network_type = '未知';
+            $this->_network_type = '未知';
         }
     }
 
@@ -189,43 +181,29 @@ abstract class ASms extends SmsErrorException {
 
     /**
      * 设置验证码
+     *
+     * @param string $key 键名
+     * @param string $value 值
+     * @param int $expire 有效期
      * @return mixed
      */
-    abstract protected function _setValue($name, $value, $expire);
+    abstract protected function _setValue($key, $value, $expire);
 
     /**
-     * 检查短信状态
+     * 检查短信发送状态
      *
-     * @param $result
-     * @param array $params
+     * @param int $result 短信返回状态
+     * @param array $params 其它参数
+     * @return mixed
      */
-    private function _checkStatus($result, $params = array()) {
-        switch($result->SendMsgResult) {
-            case -1 :
-                SmsErrorException::printf('提交接口错误');
-                break;
-            case -3 :
-                SmsErrorException::printf("用户名或密码错误");
-                break;
-            case -4 :
-                SmsErrorException::printf("短信内容和备案的模板不一样");
-                break;
-            case -5 :
-                SmsErrorException::printf("签名不正确");
-                break;
-            case -7 :
-                SmsErrorException::printf("余额不足");
-                break;
-            case -8 :
-                SmsErrorException::printf("通道错误");
-                break;
-            case -9 :
-                SmsErrorException::printf("{$this->_network_type}号码{$params['mobile']}：无效号码\n");
-                break;
-            default :
-                break;
-        }
-    }
+    abstract protected function _checkStatus($result, $params = array());
+
+    /**
+     * 具体实现发送短信处理
+     *
+     * @return mixed
+     */
+    abstract protected function _send();
 
 
     # 配置信息
@@ -234,7 +212,7 @@ abstract class ASms extends SmsErrorException {
     # 短信验证码标识符
     const SMS_KEY = 'smsAuth';
     # 短信平台地址
-    const SMS_GATEWAY = "http://sms.cqmono.cn/api/MsgSend.asmx?WSDL";
+    const SMS_GATEWAY = "http://sdk4report.eucp.b2m.cn:8080/sdk/SDKService?wsdl";
     # 短信生存时间
     protected $_expire = 180;
     # 每个手机号最大发送次数
