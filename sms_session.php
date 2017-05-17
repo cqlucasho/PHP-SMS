@@ -33,27 +33,18 @@ class SmsSession extends ASms {
      * @return bool
      */
     public function sendSms($params = array()) {
-        # 生成hash
+        # 生成hash key
         if(!isset($params['token'])) $params['token'] = $params['mobile'];
         $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
 
-        # 判断是否已经发送, 并且发送次数未超过限定最大数
-        $count = isset($_SESSION[$hashKey]) ? $_SESSION[$hashKey]['count'] : 1;
-        if($count <= $this->_configs['sms_send_num']) {
-            if($count != 1) {
-                $_SESSION[$hashKey]['count'] += 1;
-                $this->cleanValue($hashKey);
-            }
-        }
-        else {
-            return false;
-        }
+        # 判断是否已经发送
+        if(isset($_SESSION[$hashKey])) $this->cleanValue($params['token']);
 
         if(!empty($params)) {
             $mobile = !empty($params['mobile']) ? $params['mobile'] : '';
 
             # 生成验证码
-            $validateCode = $this->_generateValidateCode($count);
+            $validateCode = $this->_generateValidateCode();
             # 生成短信模板
             $templateString = $this->_selectTemplate($params, $validateCode['code']);
 
@@ -92,6 +83,13 @@ class SmsSession extends ASms {
      */
     public function setCurrentTemplate($templateName = '') {
         if(!empty($templateName)) $this->_current_template = $templateName;
+    }
+
+    /**
+     * @see ASms::_setValue()
+     */
+    protected function _setValue($key, $value, $expire = 0) {
+        $_SESSION[$key] = $value;
     }
 
     /**
@@ -160,13 +158,35 @@ class SmsSession extends ASms {
     }
 
     /**
-     * 保存短信到缓存
-     *
-     * @param string $key  缓存key
-     * @param string $value 缓存值
-     * @param int $expire 有效期
+     * @see ASms::_send()
      */
-    protected function _setValue($key, $value, $expire = 0) {
-        $_SESSION[$key] = $value;
+    protected function _send() {
+        return true;
+    }
+
+    /**
+     * @see ASms::_checkStatus()
+     */
+    protected function _checkStatus($result, $params = array()) {
+        switch($result) {
+            case -1 :
+                SmsErrorException::printf('系统异常');
+                break;
+            case -117 :
+                SmsErrorException::printf('发送短信失败');
+                break;
+            case 305 :
+                SmsErrorException::printf('提交接口错误');
+                break;
+            case 101:
+            case 303:
+                SmsErrorException::printf('客户端网络故障');
+                break;
+            case 307:
+                SmsErrorException::printf("{$this->_network_type}号码{$params['mobile']}：无效号码\n");
+                break;
+            default :
+                break;
+        }
     }
 }
