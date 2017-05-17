@@ -2,16 +2,16 @@
 require_once('library'.DIRECTORY_SEPARATOR.'a_sms.php');
 
 /**
- * 短信类, 用于获取短信通知信息.
+ * 短信类(缓存版), 用于获取短信通知信息.
  *
  * @example
  *  发送:
- *      require_once('extends/tools/sms/sms_memcache.php');
+ *      require_once('sms_memcache.php');
  *      $sms = new SmsMemcache('需要使用的短信模板名称', '传入sms_config文件变量,缺省为自动加载');
  *      $sms->sendSms(array('token' => 'xxx', 'mobile' => 'xxx', 'money' => 'xxx'));
  *
  *  读取:
- *      require_once('extends/tools/sms/sms_memcache.php');
+ *      require_once('sms_memcache.php');
  *      $sms = new SmsMemcache();
  *      $sms->getValue($name);
  */
