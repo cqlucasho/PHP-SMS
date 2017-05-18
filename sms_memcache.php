@@ -35,7 +35,7 @@ class SmsMemcache extends ASms {
      */
     public function sendSms($params = array()) {
         # 生成hash
-        if(!isset($params['token'])) $params['token'] = $params['mobile'];
+        if(empty($params['token'])) $params['token'] = $params['mobile'];
         $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
 
         # 判断是否已经发送, 并且发送次数未超过限定最大数
