@@ -160,7 +160,7 @@ class SmsSession extends ASms {
     /**
      * @see ASms::_send()
      */
-    protected function _send() {
+    protected function _send($mobile, $template) {
         # 发送参数到短信平台
         /*$client = new SoapClient(self::SMS_GATEWAY);
         $param = array(
