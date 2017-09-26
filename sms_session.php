@@ -36,9 +36,13 @@ class SmsSession extends ASms {
         # 生成hash key
         if(empty($params['token'])) $params['token'] = $params['mobile'];
         $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
-
-        # 判断是否已经发送
-        if(isset($_SESSION[$hashKey])) $this->cleanValue($params['token']);
+        
+        # 判断是否已经发送并且判断时间是否过期
+        if(isset($_SESSION[$hashKey]) && ($_SESSION[$hashKey.'life'] < time())) {
+            $this->cleanValue($params['token']);
+        } else {
+            return false;
+        }
 
         if(!empty($params)) {
             $mobile = !empty($params['mobile']) ? $params['mobile'] : '';
@@ -133,7 +137,9 @@ class SmsSession extends ASms {
     public function cleanValue($key) {
         $genKey = $this->_generateSmsKey(self::SMS_KEY.$key);
         $_SESSION[$genKey] = '';
+        $_SESSION[$genKey.'life'] = '';
         unset($_SESSION[$genKey]);
+        unset($_SESSION[$genKey.'life']);
     }
 
     /**
