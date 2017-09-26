@@ -106,7 +106,7 @@ class SmsSession extends ASms {
     public function getValue($key) {
         $genKey = $this->_generateSmsKey(self::SMS_KEY.$key);
 
-        return ($value = $_SESSION[$genKey]) ? $value['code'] : false;
+        return (isset($_SESSION[$genKey]) && ($_SESSION[$genKey.'life'] > time()) && ($value = $_SESSION[$genKey])) ? $value['code'] : false;
     }
 
     /**
