@@ -156,7 +156,10 @@ abstract class ASms extends SmsErrorException {
      */
     protected function _generateSmsKey($name) {
         $key = sha1($name);
-        $_SESSION[$key.'life'] = time()+$this->fetchExpire();
+        if(!isset($_SESSION[$key.'life'])) {
+            $time = $this->fetchExpire();
+            $_SESSION[$key.'life'] = time()+$time;
+        }
 
         return $key;
     }
