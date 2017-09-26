@@ -38,11 +38,8 @@ class SmsSession extends ASms {
         $hashKey = $this->_generateSmsKey(self::SMS_KEY.$params['token']);
         
         # 判断是否已经发送并且判断时间是否过期
-        if(isset($_SESSION[$hashKey]) && ($_SESSION[$hashKey.'life'] < time())) {
-            $this->cleanValue($params['token']);
-        } else {
-            return false;
-        }
+        if($_SESSION[$hashKey.'life'] > time()) return false;
+        if(isset($_SESSION[$hashKey]) && !empty($_SESSION[$hashKey])) $this->cleanValue($params['token']);
 
         if(!empty($params)) {
             $mobile = !empty($params['mobile']) ? $params['mobile'] : '';
